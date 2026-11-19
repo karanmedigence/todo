@@ -22,13 +22,28 @@ final class TodoCreateRequested extends TodoEvent {
 }
 
 final class TodoUpdateRequested extends TodoEvent {
-  const TodoUpdateRequested({required this.id, required this.isCompleted});
+  const TodoUpdateRequested({
+    required this.id,
+    this.title,
+    this.description,
+    this.isCompleted,
+    this.clearDescription = false,
+  });
 
   final String id;
-  final bool isCompleted;
+  final String? title;
+  final String? description;
+  final bool? isCompleted;
+  final bool clearDescription;
 
   @override
-  List<Object?> get props => [id, isCompleted];
+  List<Object?> get props => [
+    id,
+    title,
+    description,
+    isCompleted,
+    clearDescription,
+  ];
 }
 
 final class TodoDeleteRequested extends TodoEvent {

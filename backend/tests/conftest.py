@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -27,12 +28,17 @@ class InMemoryCollection:
             self.documents.append(saved)
             return SimpleNamespace(inserted_id=saved["_id"])
 
-    def find_one(self, query: dict) -> dict | None:
+    def find_one(self, query: dict, projection: dict | None = None) -> dict | None:
         with self._lock:
-            return next(
-                (deepcopy(document) for document in self.documents if self._matches(document, query)),
+            document = next(
+                (
+                    deepcopy(document)
+                    for document in self.documents
+                    if self._matches(document, query)
+                ),
                 None,
             )
+        return self._project(document, projection)
 
     def find_one_and_update(
         self,
@@ -66,13 +72,43 @@ class InMemoryCollection:
                     return SimpleNamespace(modified_count=1)
         return SimpleNamespace(modified_count=0)
 
-    def find(self, query: dict) -> list[dict]:
+    def find(
+        self,
+        query: dict,
+        projection: dict | None = None,
+    ) -> "InMemoryCursor":
         with self._lock:
-            return [
+            documents = [
                 deepcopy(document)
                 for document in self.documents
                 if self._matches(document, query)
             ]
+        if projection is not None:
+            documents = [
+                self._project(document, projection)
+                for document in documents
+            ]
+        return InMemoryCursor(documents)
+
+    def delete_one(self, query: dict) -> SimpleNamespace:
+        with self._lock:
+            for index, document in enumerate(self.documents):
+                if self._matches(document, query):
+                    del self.documents[index]
+                    return SimpleNamespace(deleted_count=1)
+        return SimpleNamespace(deleted_count=0)
+
+    def delete_many(self, query: dict) -> SimpleNamespace:
+        with self._lock:
+            original_count = len(self.documents)
+            self.documents = [
+                document
+                for document in self.documents
+                if not self._matches(document, query)
+            ]
+            return SimpleNamespace(
+                deleted_count=original_count - len(self.documents)
+            )
 
     def distinct(self, field: str, query: dict) -> list:
         with self._lock:
@@ -87,17 +123,53 @@ class InMemoryCollection:
     @staticmethod
     def _matches(document: dict, query: dict) -> bool:
         for field, expected in query.items():
-            actual = document.get(field)
-            if isinstance(expected, dict):
-                if "$gt" in expected and (
-                    actual is None
-                    or InMemoryCollection._as_utc(actual)
-                    <= InMemoryCollection._as_utc(expected["$gt"])
+            if field == "$or":
+                if not any(
+                    InMemoryCollection._matches(document, clause)
+                    for clause in expected
                 ):
                     return False
+                continue
+
+            actual = document.get(field)
+            if isinstance(expected, dict):
+                for operator, value in expected.items():
+                    if operator == "$gt" and (
+                        actual is None
+                        or InMemoryCollection._as_utc(actual)
+                        <= InMemoryCollection._as_utc(value)
+                    ):
+                        return False
+                    if operator == "$ne" and actual == value:
+                        return False
+                    if operator == "$regex":
+                        flags = (
+                            re.IGNORECASE
+                            if expected.get("$options") == "i"
+                            else 0
+                        )
+                        if not isinstance(actual, str) or re.search(
+                            value,
+                            actual,
+                            flags,
+                        ) is None:
+                            return False
             elif actual != expected:
                 return False
         return True
+
+    @staticmethod
+    def _project(document: dict | None, projection: dict | None) -> dict | None:
+        if document is None or projection is None:
+            return document
+        included_fields = {
+            field for field, included in projection.items() if included
+        }
+        return {
+            field: value
+            for field, value in document.items()
+            if field in included_fields
+        }
 
     @staticmethod
     def _mongo_values(document: dict) -> dict:
@@ -114,6 +186,29 @@ class InMemoryCollection:
         return value.astimezone(timezone.utc)
 
 
+class InMemoryCursor:
+    def __init__(self, documents: list[dict]) -> None:
+        self.documents = documents
+
+    def skip(self, count: int) -> "InMemoryCursor":
+        self.documents = self.documents[count:]
+        return self
+
+    def limit(self, count: int) -> "InMemoryCursor":
+        self.documents = self.documents[:count]
+        return self
+
+    def sort(self, field: str, direction: int = 1) -> "InMemoryCursor":
+        self.documents.sort(
+            key=lambda document: document.get(field),
+            reverse=direction < 0,
+        )
+        return self
+
+    def __iter__(self):
+        return iter(self.documents)
+
+
 class InMemoryDatabase:
     def __init__(self) -> None:
         self.collections = {
@@ -121,6 +216,7 @@ class InMemoryDatabase:
             "refresh_tokens": InMemoryCollection(),
             "device_credentials": InMemoryCollection(),
             "todos": InMemoryCollection(),
+            "chat_messages": InMemoryCollection(),
         }
 
     def __getitem__(self, name: str) -> InMemoryCollection:
@@ -140,6 +236,7 @@ connection_module.__dict__.update(
         "users_collection": TEST_DATABASE["users"],
         "refresh_tokens_collection": TEST_DATABASE["refresh_tokens"],
         "device_credentials_collection": TEST_DATABASE["device_credentials"],
+        "chat_messages_collection": TEST_DATABASE["chat_messages"],
     }
 )
 sys.modules["app.db.connection"] = connection_module

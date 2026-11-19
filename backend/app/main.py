@@ -1,9 +1,22 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, todo
+from app.routers import admin_users, auth, chat, todo
+from app.services.redis_service import redis_client
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    try:
+        await redis_client.ping()
+        yield
+    finally:
+        await redis_client.aclose()
+
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"^http://(localhost|127\.0\.0\.1)(:\d+)?$",
@@ -14,6 +27,10 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(admin_users.router)
+app.include_router(admin_users.router, prefix="/api/v1")
+app.include_router(chat.router)
+app.include_router(chat.router, prefix="/api/v1")
 app.include_router(todo.router)
 
 

@@ -5,6 +5,7 @@ import 'package:frontend/todo/bloc/todo_event.dart';
 import 'package:frontend/todo/bloc/todo_states.dart';
 import 'package:frontend/todo/data/todo_model.dart';
 import 'package:frontend/todo/presentation/add_todo_screen.dart';
+import 'package:frontend/core/theme/app_theme.dart';
 
 class AllTodoScreen extends StatefulWidget {
   const AllTodoScreen({super.key});
@@ -39,6 +40,10 @@ class _AllTodoScreenState extends State<AllTodoScreen> {
     );
   }
 
+  Future<void> _editTodo(TodoModel todo) => Navigator.of(context).push<void>(
+    MaterialPageRoute<void>(builder: (_) => AddTodoScreen(todo: todo)),
+  );
+
   Future<void> _deleteTodo(TodoModel todo) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
@@ -66,7 +71,7 @@ class _AllTodoScreenState extends State<AllTodoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My todos'),
+        title: const Text('My workspace'),
         actions: [
           IconButton(
             onPressed: () =>
@@ -114,18 +119,134 @@ class _AllTodoScreenState extends State<AllTodoScreen> {
 
     final todos = (state as TodoLoaded).todos;
     if (todos.isEmpty) {
-      return const Center(child: Text('No todos yet. Add one to get started.'));
+      return RefreshIndicator(
+        onRefresh: _loadTodos,
+        color: AppTheme.gold,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 120),
+          children: [
+            Text('Today', style: Theme.of(context).textTheme.headlineLarge),
+            const SizedBox(height: 8),
+            Text(
+              'One clear plan for everything ahead.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 32),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: AppTheme.gold.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Icon(
+                        Icons.add_task_rounded,
+                        color: AppTheme.gold,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'No todos yet',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Add your first todo and start with a clean slate.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
+
+    final completed = todos.where((todo) => todo.isCompleted).length;
+    final progress = todos.isEmpty ? 0.0 : completed / todos.length;
 
     return RefreshIndicator(
       onRefresh: _loadTodos,
+      color: AppTheme.gold,
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
-        itemCount: todos.length,
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 112),
+        itemCount: todos.length + 1,
         separatorBuilder: (_, _) => const SizedBox(height: 4),
         itemBuilder: (context, index) {
-          final todo = todos[index];
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Today',
+                    style: Theme.of(context).textTheme.headlineLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '$completed of ${todos.length} complete',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(99),
+                                  child: LinearProgressIndicator(
+                                    value: progress,
+                                    minHeight: 6,
+                                    backgroundColor: AppTheme.elevated,
+                                    color: AppTheme.gold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 18),
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: const BoxDecoration(
+                              color: AppTheme.gold,
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '${(progress * 100).round()}%',
+                              style: const TextStyle(
+                                color: AppTheme.black,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          final todo = todos[index - 1];
           return Card(
             child: ListTile(
               leading: Checkbox(
@@ -145,10 +266,20 @@ class _AllTodoScreenState extends State<AllTodoScreen> {
               subtitle: todo.description == null || todo.description!.isEmpty
                   ? null
                   : Text(todo.description!),
-              trailing: IconButton(
-                onPressed: () => _deleteTodo(todo),
-                icon: const Icon(Icons.delete_outline),
-                tooltip: 'Delete todo',
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () => _editTodo(todo),
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: 'Edit todo',
+                  ),
+                  IconButton(
+                    onPressed: () => _deleteTodo(todo),
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: 'Delete todo',
+                  ),
+                ],
               ),
             ),
           );

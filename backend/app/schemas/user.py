@@ -35,7 +35,38 @@ class UserResponse(BaseModel):
     id: str
     name: str
     email: EmailStr
+    role: Literal["user", "admin"]
     message: str
+
+
+class AdminUserCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=50)
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    role: Literal["user", "admin"] = "user"
+
+
+class AdminUserUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=2, max_length=50)
+    email: EmailStr | None = None
+    password: str | None = Field(default=None, min_length=8, max_length=128)
+    role: Literal["user", "admin"] | None = None
+
+    @model_validator(mode="after")
+    def validate_updates(self) -> Self:
+        updates = self.model_dump(exclude_unset=True)
+        if not updates:
+            raise ValueError("At least one user field must be provided")
+        if any(value is None for value in updates.values()):
+            raise ValueError("User fields cannot be null")
+        return self
+
+
+class AdminUserResponse(BaseModel):
+    id: str
+    name: str
+    email: EmailStr
+    role: Literal["user", "admin"]
 
 
 class TokenPairResponse(BaseModel):
@@ -50,6 +81,7 @@ class AuthTokenResponse(TokenPairResponse):
     id: str
     name: str
     email: EmailStr
+    role: Literal["user", "admin"]
     message: str
 
 
@@ -75,6 +107,7 @@ class CurrentUserResponse(BaseModel):
     id: str
     name: str
     email: EmailStr
+    role: Literal["user", "admin"]
 
 
 class LogoutResponse(BaseModel):

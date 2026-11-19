@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/network/api_client.dart';
 import 'package:frontend/todo/domain/todo_repository.dart';
+
 import 'test_support/fakes.dart';
 
 void main() {
@@ -20,6 +21,8 @@ void main() {
     final todos = await repository.getTodos();
     final updatedTodo = await repository.updateTodo(
       id: 'todo-1',
+      title: 'Buy groceries',
+      description: 'Milk and eggs',
       isCompleted: true,
     );
     await repository.deleteTodo('todo-1');
@@ -43,7 +46,11 @@ void main() {
       ),
       isTrue,
     );
-    expect(adapter.requests[1].data, {'is_completed': true});
+    expect(adapter.requests[1].data, {
+      'title': 'Buy groceries',
+      'description': 'Milk and eggs',
+      'is_completed': true,
+    });
   });
 }
 

@@ -12,7 +12,6 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
     on<TodoDeleteRequested>(_onDeleteRequested);
   }
 
-  
   final TodoRepository todoRepository;
 
   Future<void> _onLoadRequested(
@@ -53,7 +52,10 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
     try {
       final updatedTodo = await todoRepository.updateTodo(
         id: event.id,
+        title: event.title,
+        description: event.description,
         isCompleted: event.isCompleted,
+        clearDescription: event.clearDescription,
       );
       final todos = state is TodoLoaded
           ? (state as TodoLoaded).todos

@@ -4,6 +4,7 @@ import 'package:frontend/auth/presentation/bloc/auth_bloc.dart';
 import 'package:frontend/auth/presentation/bloc/auth_event.dart';
 import 'package:frontend/auth/presentation/bloc/auth_state.dart';
 import 'package:frontend/auth/presentation/auth_form_validators.dart';
+import 'package:frontend/core/theme/app_theme.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -53,115 +54,127 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       },
       child: Scaffold(
-      appBar: AppBar(title: const Text('Register')),
-      body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Create your account',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Register to get started.',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 28),
-                    TextFormField(
-                      controller: _nameController,
-                      enabled: !isSubmitting,
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.name],
-                      decoration: const InputDecoration(
-                        labelText: 'Name',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: validateName,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _emailController,
-                      enabled: !isSubmitting,
-                      autofillHints: const [AutofillHints.email],
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: validateEmail,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      enabled: !isSubmitting,
-                      obscureText: _passwordObscured,
-                      autofillHints: const [AutofillHints.newPassword],
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _register(),
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        helperText: 'At least 8 characters',
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          onPressed: () => setState(
-                            () => _passwordObscured = !_passwordObscured,
-                          ),
-                          icon: Icon(
-                            _passwordObscured
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                          ),
-                          tooltip: _passwordObscured
-                              ? 'Show password'
-                              : 'Hide password',
+        body: SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: IconButton(
+                          onPressed: isSubmitting
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          tooltip: 'Back',
                         ),
                       ),
-                      validator: validatePassword,
-                    ),
-                    if (errorMessage != null) ...[
                       const SizedBox(height: 16),
                       Text(
-                        errorMessage,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
+                        'Create your\naccount.',
+                        style: Theme.of(context).textTheme.headlineLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'A calmer, sharper way to get things done.',
+                        style: Theme.of(context).textTheme.bodyLarge
+                            ?.copyWith(color: AppTheme.muted),
+                      ),
+                      const SizedBox(height: 28),
+                      TextFormField(
+                        controller: _nameController,
+                        enabled: !isSubmitting,
+                        textInputAction: TextInputAction.next,
+                        autofillHints: const [AutofillHints.name],
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          border: OutlineInputBorder(),
                         ),
-                        textAlign: TextAlign.center,
+                        validator: validateName,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _emailController,
+                        enabled: !isSubmitting,
+                        autofillHints: const [AutofillHints.email],
+                        textInputAction: TextInputAction.next,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: validateEmail,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        enabled: !isSubmitting,
+                        obscureText: _passwordObscured,
+                        autofillHints: const [AutofillHints.newPassword],
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) => _register(),
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          helperText: 'At least 8 characters',
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            onPressed: () => setState(
+                              () => _passwordObscured = !_passwordObscured,
+                            ),
+                            icon: Icon(
+                              _passwordObscured
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                            ),
+                            tooltip: _passwordObscured
+                                ? 'Show password'
+                                : 'Hide password',
+                          ),
+                        ),
+                        validator: validatePassword,
+                      ),
+                      if (errorMessage != null) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          errorMessage,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      FilledButton(
+                        onPressed: isSubmitting ? null : _register,
+                        child: isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Create account'),
+                      ),
+                      TextButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        child: const Text('Back to login'),
                       ),
                     ],
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: isSubmitting ? null : _register,
-                      child: isSubmitting
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Create account'),
-                    ),
-                    TextButton(
-                      onPressed: isSubmitting
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      child: const Text('Back to login'),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }

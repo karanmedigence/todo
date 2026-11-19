@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:frontend/auth/presentation/auth_gate.dart';
 import 'package:frontend/core/bloc/bloc_engine.dart';
+import 'package:frontend/core/theme/app_theme.dart';
 import 'package:frontend/di/injection.dart';
 
 void main() async {
@@ -14,7 +15,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const BlocEngine(child: MaterialApp(home: AuthGate()));
+    return BlocEngine(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.dark,
+        darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.dark,
+        home: const AuthGate(),
+      ),
+    );
   }
 }
-   

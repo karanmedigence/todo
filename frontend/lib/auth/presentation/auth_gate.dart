@@ -17,8 +17,10 @@ class AuthGate extends StatelessWidget {
         }
         if (state is AuthAuthenticated) {
           return SignedInScreen(
+            userId: state.user.id,
             name: state.user.name,
             email: state.user.email,
+            role: state.user.role,
           );
         }
         return const LoginScreen();

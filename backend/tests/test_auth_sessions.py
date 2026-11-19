@@ -363,6 +363,10 @@ def test_auth_routes_are_available_with_and_without_api_version_prefix():
         assert f"{prefix}/devices" in paths
         assert f"{prefix}/devices/{{device_id}}" in paths
 
+    for prefix in ("/admin/users", "/api/v1/admin/users"):
+        assert f"{prefix}" in paths
+        assert f"{prefix}/{{user_id}}" in paths
+
 
 def test_concurrent_refresh_requests_cannot_create_active_descendants():
     register_user()

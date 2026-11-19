@@ -23,3 +23,56 @@ Device secrets are long-lived credentials: anyone who extracts one from a
 device can attempt silent login until that device is revoked. Use HTTPS and
 never log device secrets or tokens. Password login is required to re-enable a
 revoked device credential.
+
+## Roles and user administration
+
+New self-registered accounts always receive the `user` role. User roles are
+read from MongoDB on each authenticated request; the client cannot grant or
+change its own role.
+
+The `admin` role can manage users through `/admin/users` (also available under
+`/api/v1/admin/users`):
+
+- `POST` creates a user with a name, email, password, and optional `user` or
+  `admin` role.
+- `GET` lists users (50 per page by default, maximum 100; use `skip` and
+  `limit`) or retrieves one user by ID.
+- `PATCH` updates a user's name, email, password, or role. Password changes
+  revoke that user's sessions.
+- `DELETE` permanently deletes the account, its todos, chat messages, and
+  sessions.
+
+The Flutter signed-in screen shows a **Manage users** entry only for accounts
+whose authenticated user response has the `admin` role. The API still enforces
+the role independently of the UI.
+
+Admins cannot delete or demote themselves, and the last admin cannot be
+removed. To bootstrap the first admin, promote a trusted account directly in
+MongoDB, for example:
+
+```javascript
+db.users.updateOne(
+  { email: "trusted-admin@example.com" },
+  { $set: { role: "admin" } }
+)
+```
+
+## One-to-one chat
+
+Signed-in users can open **Chat with a user** and search registered accounts by
+email through `GET /chat/users?search=<email-fragment>`. Chat history is stored
+in MongoDB and loaded from `GET /chat/{peer_id}/messages` (latest 100
+messages). Live delivery uses `/chat/ws/{peer_id}` (also available under
+`/api/v1/chat/ws/{peer_id}`). The first WebSocket frame authenticates with the
+access token; tokens are not placed in the URL.
+
+After connecting, send `{"type":"authenticate","token":"<access-token>"}`.
+Once the server replies with `type: "ready"`, send
+`{"type":"message","content":"Hello"}` frames. Both participants receive
+`type: "message"` events containing the persisted message.
+
+Live socket delivery uses Redis Pub/Sub, so messages reach connected users on
+different FastAPI workers. `REDIS_URL` configures the connection;
+`backend/docker-compose.yml` starts Redis locally. The API checks Redis on
+startup and shuts down its connection cleanly. Message history remains stored
+in MongoDB, not Redis.

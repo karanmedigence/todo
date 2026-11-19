@@ -59,12 +59,38 @@ void main() {
     await tester.pumpWidget(
       _withAuthBloc(
         bloc,
-        const SignedInScreen(name: 'Avery User', email: 'avery@example.com'),
+        const SignedInScreen(
+          userId: 'user-1',
+          name: 'Avery User',
+          email: 'avery@example.com',
+          role: 'user',
+        ),
       ),
     );
 
     expect(find.text('Avery User'), findsOneWidget);
     expect(find.text('avery@example.com'), findsOneWidget);
+    expect(find.text('Manage users'), findsNothing);
+  });
+
+  testWidgets('admin sees the user management entry', (tester) async {
+    final bloc = _createAuthBloc();
+    addTearDown(bloc.close);
+    await tester.pumpWidget(
+      _withAuthBloc(
+        bloc,
+        const SignedInScreen(
+          userId: 'admin-1',
+          name: 'Admin User',
+          email: 'admin@example.com',
+          role: 'admin',
+        ),
+      ),
+    );
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Manage users'), findsOneWidget);
   });
 
   testWidgets('todo screen displays todos loaded through the bloc', (

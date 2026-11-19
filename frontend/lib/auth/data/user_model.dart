@@ -1,9 +1,17 @@
 class UserModel {
-  const UserModel({required this.id, required this.name, required this.email});
+  const UserModel({
+    required this.id,
+    required this.name,
+    required this.email,
+    this.role = 'user',
+  });
 
   final String id;
   final String name;
   final String email;
+  final String role;
+
+  bool get isAdmin => role == 'admin';
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final id = json['id'];
@@ -12,10 +20,11 @@ class UserModel {
     if (id is! String || name is! String || email is! String) {
       throw const FormatException('Invalid user response from server.');
     }
-    return UserModel(id: id, name: name, email: email);
+    final role = json['role'] == 'admin' ? 'admin' : 'user';
+    return UserModel(id: id, name: name, email: email, role: role);
   }
 
   Map<String, dynamic> toJson() {
-    return {'id': id, 'name': name, 'email': email};
+    return {'id': id, 'name': name, 'email': email, 'role': role};
   }
 }

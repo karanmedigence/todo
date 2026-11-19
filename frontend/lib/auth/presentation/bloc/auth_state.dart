@@ -22,7 +22,7 @@ final class AuthAuthenticated extends AuthState {
   final UserModel user;
 
   @override
-  List<Object?> get props => [user.id, user.name, user.email];
+  List<Object?> get props => [user.id, user.name, user.email, user.role];
 }
 
 final class AuthUnauthenticated extends AuthState {

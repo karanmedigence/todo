@@ -44,9 +44,7 @@ class TodoRepository {
 
   Future<List<TodoModel>> getTodos() async {
     try {
-      final response = await _apiClient.dio.get<List<dynamic>>(
-        '/todos/',
-      );
+      final response = await _apiClient.dio.get<List<dynamic>>('/todos/');
       final data = response.data;
       if (data == null) {
         throw const TodoException(
@@ -55,14 +53,16 @@ class TodoRepository {
       }
 
       try {
-        return data.map((item) {
-          if (item is! Map<String, dynamic>) {
-            throw const FormatException(
-              'Invalid todo list response from server.',
-            );
-          }
-          return TodoModel.fromJson(item);
-        }).toList(growable: false);
+        return data
+            .map((item) {
+              if (item is! Map<String, dynamic>) {
+                throw const FormatException(
+                  'Invalid todo list response from server.',
+                );
+              }
+              return TodoModel.fromJson(item);
+            })
+            .toList(growable: false);
       } on FormatException catch (error) {
         throw TodoException(error.message);
       }
@@ -73,12 +73,23 @@ class TodoRepository {
 
   Future<TodoModel> updateTodo({
     required String id,
-    required bool isCompleted,
+    String? title,
+    String? description,
+    bool? isCompleted,
+    bool clearDescription = false,
   }) async {
     try {
+      final requestData = <String, dynamic>{};
+      if (title != null) requestData['title'] = title;
+      if (description != null) requestData['description'] = description;
+      if (clearDescription) requestData['description'] = null;
+      if (isCompleted != null) {
+        requestData['is_completed'] = isCompleted;
+      }
+
       final response = await _apiClient.dio.put<Map<String, dynamic>>(
         '/todos/${Uri.encodeComponent(id)}',
-        data: {'is_completed': isCompleted},
+        data: requestData,
       );
       final data = response.data;
       if (data == null) {

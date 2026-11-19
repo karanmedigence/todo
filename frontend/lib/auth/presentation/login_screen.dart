@@ -5,6 +5,7 @@ import 'package:frontend/auth/presentation/register_screen.dart';
 import 'package:frontend/auth/presentation/bloc/auth_bloc.dart';
 import 'package:frontend/auth/presentation/bloc/auth_event.dart';
 import 'package:frontend/auth/presentation/bloc/auth_state.dart';
+import 'package:frontend/core/theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -59,30 +60,34 @@ class _LoginScreenState extends State<LoginScreen> {
         : null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: const BoxConstraints(maxWidth: 440),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: _BrandMark(),
+                    ),
+                    const SizedBox(height: 32),
                     Text(
-                      'Welcome back',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      textAlign: TextAlign.center,
+                      'Welcome back.',
+                      style: Theme.of(context).textTheme.headlineLarge,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Sign in to continue to your account.',
-                      textAlign: TextAlign.center,
+                    Text(
+                      'Sign in and take control of your day.',
+                      style: Theme.of(context).textTheme.bodyLarge
+                          ?.copyWith(color: AppTheme.muted),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 32),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -147,8 +152,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: isSubmitting
                             ? null
                             : () => context.read<AuthBloc>().add(
-                                  const AuthCheckRequested(),
-                                ),
+                                const AuthCheckRequested(),
+                              ),
                         child: const Text('Retry session restoration'),
                       ),
                     ],
@@ -174,6 +179,30 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _BrandMark extends StatelessWidget {
+  const _BrandMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppTheme.gold,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.gold.withValues(alpha: 0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: const Icon(Icons.check_rounded, color: AppTheme.black, size: 28),
     );
   }
 }

@@ -1,4 +1,5 @@
 
+from collections.abc import Callable
 from uuid import UUID
 
 import jwt
@@ -88,11 +89,33 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    role = user.get("role", "user")
+    if role not in {"user", "admin"}:
+        role = "user"
+
     return {
         "id": str(user["_id"]),
         "name": user["name"],
-        "email": user["email"]
+        "email": user["email"],
+        "role": role,
     }
+
+
+def require_role(*allowed_roles: str) -> Callable[..., dict[str, str]]:
+    if not allowed_roles:
+        raise ValueError("At least one role must be specified")
+
+    def check_role(
+        current_user: dict[str, str] = Depends(get_current_user),
+    ) -> dict[str, str]:
+        if current_user.get("role") not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions",
+            )
+        return current_user
+
+    return check_role
 
 
 @router.post(
@@ -120,7 +143,8 @@ def register_user(user: UserRegister):
     user_data = {
         "name": user.name,
         "email": user.email,
-        "password": hashed_password
+        "password": hashed_password,
+        "role": "user",
     }
 
     try:
@@ -136,6 +160,7 @@ def register_user(user: UserRegister):
         "id": str(result.inserted_id),
         "name": user.name,
         "email": user.email,
+        "role": "user",
         "message": "User registered successfully"
     }
 
@@ -199,6 +224,7 @@ def login_user(user: UserLogin):
         "id": str(existing_user["_id"]),
         "name": existing_user["name"],
         "email": existing_user["email"],
+        "role": existing_user.get("role", "user"),
         "message": "User logged in successfully"
     }
 
@@ -241,6 +267,7 @@ def device_login(request: DeviceLoginRequest) -> AuthTokenResponse:
         id=str(user["_id"]),
         name=user["name"],
         email=user["email"],
+        role=user.get("role", "user"),
         message="Device login successful",
     )
 
@@ -284,6 +311,7 @@ def logout_all(
 
 @router.get("/devices", response_model=DeviceListResponse)
 def get_devices(
+    # After lunch
     current_user: dict[str, str] = Depends(get_current_user),
 ) -> DeviceListResponse:
     devices = list_device_credentials(current_user["id"])

@@ -30,7 +30,14 @@ void main() {
           state is TodoLoaded &&
           state.todos.any((item) => item.id == 'todo-1' && item.isCompleted),
     );
-    bloc.add(const TodoUpdateRequested(id: 'todo-1', isCompleted: true));
+    bloc.add(
+      const TodoUpdateRequested(
+        id: 'todo-1',
+        title: 'Updated first todo',
+        description: 'Updated description',
+        isCompleted: true,
+      ),
+    );
     expect(
       (await updated as TodoLoaded).todos
           .singleWhere((item) => item.id == 'todo-1')
@@ -98,15 +105,20 @@ class FakeTodoRepository extends TodoRepository {
   @override
   Future<TodoModel> updateTodo({
     required String id,
-    required bool isCompleted,
+    String? title,
+    String? description,
+    bool? isCompleted,
+    bool clearDescription = false,
   }) async {
     _throwIfNeeded();
     final index = todos.indexWhere((item) => item.id == id);
     final updated = TodoModel(
       id: id,
-      title: todos[index].title,
-      description: todos[index].description,
-      isCompleted: isCompleted,
+      title: title ?? todos[index].title,
+      description: clearDescription
+          ? null
+          : (description ?? todos[index].description),
+      isCompleted: isCompleted ?? todos[index].isCompleted,
     );
     todos[index] = updated;
     return updated;
