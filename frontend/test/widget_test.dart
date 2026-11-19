@@ -1,30 +1,109 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/auth/presentation/bloc/auth_bloc.dart';
+import 'package:frontend/auth/presentation/login_screen.dart';
+import 'package:frontend/auth/presentation/signed_in_screen.dart';
+import 'package:frontend/core/network/api_client.dart';
+import 'package:frontend/todo/bloc/todo_bloc.dart';
+import 'package:frontend/todo/presentation/all_todo_screen.dart';
+import 'package:frontend/todo/data/todo_model.dart';
+import 'package:frontend/todo/domain/todo_repository.dart';
 import 'package:material_ui/material_ui.dart';
 
-import 'package:frontend/main.dart';
+import 'test_support/fakes.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('login validates email and password', (tester) async {
+    final bloc = _createAuthBloc();
+    addTearDown(bloc.close);
+    await tester.pumpWidget(_withAuthBloc(bloc, const LoginScreen()));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.tap(find.text('Sign in'));
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Enter a valid email address.'), findsOneWidget);
+    expect(
+      find.text('Password must be at least 8 characters.'),
+      findsOneWidget,
+    );
   });
+
+  testWidgets('registration validates name, email, and password', (
+    tester,
+  ) async {
+    final bloc = _createAuthBloc();
+    addTearDown(bloc.close);
+    await tester.pumpWidget(_withAuthBloc(bloc, const LoginScreen()));
+
+    await tester.tap(find.text('Create an account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Enter a name with at least 2 characters.'),
+      findsOneWidget,
+    );
+    expect(find.text('Enter a valid email address.'), findsOneWidget);
+    expect(
+      find.text('Password must be at least 8 characters.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('signed-in screen displays the user name and email', (
+    tester,
+  ) async {
+    final bloc = _createAuthBloc();
+    addTearDown(bloc.close);
+    await tester.pumpWidget(
+      _withAuthBloc(
+        bloc,
+        const SignedInScreen(name: 'Avery User', email: 'avery@example.com'),
+      ),
+    );
+
+    expect(find.text('Avery User'), findsOneWidget);
+    expect(find.text('avery@example.com'), findsOneWidget);
+  });
+
+  testWidgets('todo screen displays todos loaded through the bloc', (
+    tester,
+  ) async {
+    final bloc = TodoBloc(todoRepository: _TodoRepository());
+    addTearDown(bloc.close);
+    await tester.pumpWidget(
+      BlocProvider.value(
+        value: bloc,
+        child: const MaterialApp(home: AllTodoScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Widget todo'), findsOneWidget);
+  });
+}
+
+AuthBloc _createAuthBloc() => AuthBloc(
+  authRepository: FakeAuthRepository(),
+  apiClient: ApiClient(tokenStorage: MemoryTokenStorage()),
+);
+
+Widget _withAuthBloc(AuthBloc bloc, Widget child) => BlocProvider.value(
+  value: bloc,
+  child: MaterialApp(home: child),
+);
+
+class _TodoRepository extends TodoRepository {
+  _TodoRepository() : super(ApiClient(tokenStorage: MemoryTokenStorage()));
+
+  @override
+  Future<List<TodoModel>> getTodos() async => const [
+    TodoModel(
+      id: 'todo-1',
+      title: 'Widget todo',
+      description: null,
+      isCompleted: false,
+    ),
+  ];
 }
