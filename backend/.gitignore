@@ -1,3 +1,27 @@
 .env
 .env.*
 !.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+
+# Android
+**/android/.gradle/
+**/android/build/
+**/android/app/build/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
